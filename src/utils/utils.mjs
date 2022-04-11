@@ -1,93 +1,10 @@
 import { ethers } from 'ethers';
 import BigNumber from 'bignumber.js';
 
+import { isAddress, isBigNumber, isFunction, isNumber, isPOJO } from './typeChecks.mjs';
+import { validateIsAddress, validateIsNumber } from './validations.mjs';
+
 const prefix = '@elastic-swap/sdk';
-
-const buildError = ({
-  message,
-  customPrefix = '@elasticswap/sdk - validations',
-}) => `${customPrefix}: ${message}`;
-
-//
-// Validations
-//
-
-export const isAddress = (thing) =>
-  thing &&
-  isString(thing) &&
-  ethers.utils.isHexString(thing) &&
-  thing.length === 42;
-
-export const isBigNumber = (thing) =>
-  thing && BigNumber.isBigNumber(thing) && !thing.isNaN();
-
-export const isFunction = (thing) =>
-  thing && {}.toString.call(thing) === '[object Function]';
-
-export const isNumber = (thing) => !Number.isNaN(thing);
-
-export const isPOJO = (thing) => {
-  if (thing == null || typeof thing !== 'object') {
-    return false;
-  }
-  const proto = Object.getPrototypeOf(thing);
-  if (proto == null) {
-    return true; // `Object.create(null)`
-  }
-  return proto === Object.prototype;
-};
-
-export const isString = (thing) =>
-  typeof thing === 'string' || thing instanceof String;
-
-const validate = (result, options) => {
-  const { level = 'error', message, customPrefix, throwError = true } = options;
-
-  if (result) {
-    return true;
-  }
-
-  const error = buildError({ message, customPrefix });
-
-  if (throwError) {
-    throw new TypeError(error);
-  }
-
-  console[level](error);
-  return false;
-};
-
-export const validateIsAddress = (thing, options = {}) => {
-  const defaultMessage = 'not an Ethereum address';
-  return validate(isAddress(thing), {
-    ...options,
-    message: options.message || defaultMessage,
-  });
-};
-
-export const validateIsBigNumber = (thing, options = {}) => {
-  const defaultMessage = 'not a BigNumber';
-  return validate(isBigNumber(thing), {
-    ...options,
-    message: options.message || defaultMessage,
-  });
-};
-
-export const validateIsNumber = (thing, options = {}) => {
-  const defaultMessage = 'not a number';
-  return validate(isNumber(thing), {
-    ...options,
-    message: options.message || defaultMessage,
-  });
-};
-
-export const validateIsString = (thing, options = {}) => {
-  const defaultMessage = 'not a string';
-  return validate(isString(thing), {
-    ...options,
-    message: options.message || defaultMessage,
-  });
-};
 
 //
 // Formatting and sanitization
@@ -118,7 +35,9 @@ export const amountFormatter = ({
     value = value.multipliedBy(10 ** decimalShift);
   }
 
-  validateIsBigNumber(value, { prefix: `${prefix} - amountFormatter` });
+  if (!isBigNumber(value)) {
+    return '0.'.padEnd(decimalPlaces + 2, '0');
+  }
 
   if (isNumber(maxDigits)) {
     let left = 0;
@@ -152,6 +71,11 @@ export const amountFormatter = ({
   }
 
   return base;
+};
+
+export const toHex = (num) => {
+  const dec = BigNumber(num).toNumber();
+  return `0x${dec.toString(16).toLowerCase()}`;
 };
 
 /*
@@ -196,6 +120,7 @@ export const sanitizeOverrides = (requested = {}, readonlyMethod = false) => {
         overrides.blockTag = BigNumber(requested.blockTag).toNumber();
       } catch (e) {
         console.warn(
+          // eslint-disable-next-line max-len
           `${prefix}: Requested override 'blockTag' (${requested.blockTag}) is invalid and was excluded (${e.message})`,
         );
       }
@@ -211,6 +136,7 @@ export const sanitizeOverrides = (requested = {}, readonlyMethod = false) => {
       overrides.from = requested.from;
     } else if (requested.from) {
       console.warn(
+        // eslint-disable-next-line max-len
         `${prefix}: Requested override 'from' (${requested.from}) is not a valid address and was excluded`,
       );
     }
@@ -220,6 +146,7 @@ export const sanitizeOverrides = (requested = {}, readonlyMethod = false) => {
         overrides.gasLimit = toEthersBigNumber(requested.gasLimit);
       } catch (e) {
         console.warn(
+          // eslint-disable-next-line max-len
           `${prefix}: Requested override 'gasLimit' (${requested.gasLimit}) is invalid and was excluded (${e.message})`,
         );
       }
@@ -230,6 +157,7 @@ export const sanitizeOverrides = (requested = {}, readonlyMethod = false) => {
         overrides.gasPrice = toEthersBigNumber(requested.gasPrice);
       } catch (e) {
         console.warn(
+          // eslint-disable-next-line max-len
           `${prefix}: Requested override 'gasPrice' (${requested.gasPrice}) is invalid and was excluded (${e.message})`,
         );
       }
@@ -239,6 +167,7 @@ export const sanitizeOverrides = (requested = {}, readonlyMethod = false) => {
       overrides.nonce = requested.nonce;
     } else if (requested.nonce) {
       console.warn(
+        // eslint-disable-next-line max-len
         `${prefix}: Requested override 'nonce' (${requested.nonce}) is not a valid number and was excluded`,
       );
     }
@@ -248,6 +177,7 @@ export const sanitizeOverrides = (requested = {}, readonlyMethod = false) => {
         overrides.value = toEthersBigNumber(requested.value, 18);
       } catch (e) {
         console.warn(
+          // eslint-disable-next-line max-len
           `${prefix}: Requested override 'value' (${requested.value}) is invalid and was excluded (${e.message})`,
         );
       }
@@ -256,9 +186,7 @@ export const sanitizeOverrides = (requested = {}, readonlyMethod = false) => {
 
   Object.keys(requested).forEach((key) => {
     if (!validKeys.includes(key)) {
-      console.warn(
-        `${prefix}: Requested override '${key}' is not supported and was excluded`,
-      );
+      console.warn(`${prefix}: Requested override '${key}' is not supported and was excluded`);
     }
   });
 
@@ -270,6 +198,13 @@ export const shortenAddress = (address, digits = 4) => {
 
   const a = address.substring(0, digits + 2);
   const b = address.substring(42 - digits);
+
+  return `${a}...${b}`;
+};
+
+export const shortenHash = (address, digits = 4) => {
+  const a = address.substring(0, digits + 2);
+  const b = address.substring(66 - digits);
 
   return `${a}...${b}`;
 };
@@ -349,8 +284,7 @@ export const toKey = (...args) =>
     .filter((arg) => arg.length > 0)
     .join('|');
 
-export const toNumber = (value, decimalShift = 0) =>
-  toBigNumber(value, decimalShift).toNumber();
+export const toNumber = (value, decimalShift = 0) => toBigNumber(value, decimalShift).toNumber();
 
 export const upTo = (n) => {
   validateIsNumber(n);
