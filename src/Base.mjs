@@ -58,7 +58,7 @@ export default class Base extends Subscribable {
    * sdk signer that is registered.  If not this will return a new contract object
    * with the signer connected.  If there is no change the original contract is returned.
    * @param contract ethers contract object
-   * @returns
+   * @returns contract
    */
   confirmSigner(contract) {
     if (!contract.signer) {

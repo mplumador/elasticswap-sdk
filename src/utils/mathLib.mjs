@@ -22,6 +22,11 @@ export const NO_QUOTE_DECAY = new Error('MathLib: NO_QUOTE_DECAY');
 export const BASIS_POINTS = toBigNumber('10000');
 
 /**
+ * @typedef {Object} LiquidityQtyPairing
+ * @property {BigNumber} otherTokenQty
+ * @property {BigNumber} liquidityTokenQty
+ */
+/**
  * @dev used to calculate the qty of base tokens required and liquidity
  * tokens (deltaRo) to be issued
  * in order to add liquidity and remove base token decay.
@@ -34,7 +39,7 @@ export const BASIS_POINTS = toBigNumber('10000');
  * tokens (aka Ro)
  * @param internalBalances internal balances struct from our exchange's internal accounting
  *
- * @return {baseTokenQty, liquidityTokenQty}
+ * @return {LiquidityQtyPairing}
  * baseTokenQty - qty of base token the user must supply
  * liquidityTokenQty - qty of liquidity tokens to be issued in exchange
  */
@@ -116,7 +121,7 @@ export const calculateAddBaseTokenLiquidityQuantities = (
  * @param internalBalances internal balances struct from our exchange's internal accounting
  *
  *
- * @returns {quoteTokenQty, liquidityTokenQty}
+ * @returns {LiquidityQtyPairing}
  * quoteTokenQty - qty of quote token the user must supply
  * liquidityTokenQty -  qty of liquidity tokens to be issued in exchange
  */
@@ -758,11 +763,10 @@ export const calculateQuoteTokenQty = (
  * @param  quoteTokenReserveQty - current reserve qty of the quote token (the non-Elastic token
  * if it is an elastic pair)
  * @param  totalLPTokenSupply - current total outstanding qty of the LP token
- * @return   tokenAmounts - The min amounts of each token received by
+ * @return  tokenAmounts - The min amounts of each token received by
  * redeeming @param lpTokenQtyToRedeem
  * {
- *  quoteToken: BigNumber
- *  baseToken: Bignumber
+ * LiquidityQtyPairing
  * }
  *
  * Math: (not accounting for slippage)
@@ -832,16 +836,17 @@ export const calculateTokenAmountsFromLPTokens = (
 
   return tokenQtys;
 };
-
+/**
+ * @typedef {Object} internalBalances
+ * @property {BigNumber} baseTokenReserveQty
+ * @property {BigNumber} quoteTokenReserveQTY
+ */
 /**
  * @dev defines the amount of decay needed in order for us to require a user to handle the
  * decay prior to a double asset entry as the equivalent of 1 unit of quote token
  * @param baseTokenReserveQty current reserve qty of the baseToken
  * @param internalBalances the internal balance Struct
- * internalBalances = {
- *  baseTokenReserveQty: ,
- *  quoteTokenReserveQty: ,
- * }
+ * internalBalances = {internalBalances}
  */
 export const isSufficientDecayPresent = (baseTokenReserveQty, internalBalances) => {
   const baseTokenReserveQtyBN = toBigNumber(baseTokenReserveQty);

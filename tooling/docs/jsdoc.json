@@ -1,0 +1,9 @@
+{
+	"source": {
+		"includePattern": ".+\\.(js(doc|x)?|mjs)$"
+	},
+	"plugins": ["node_modules/jsdoc-babel", "node_modules/@babel/plugin-syntax-import-assertions"],
+	"babel": {
+	  "presets": [ "es2015" ]
+	}
+}

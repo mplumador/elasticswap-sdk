@@ -1,0 +1,2 @@
+User must have gitbook-cli installed globally with the latest graceful-fs
+See https://stackoverflow.com/questions/64211386/gitbook-cli-install-error-typeerror-cb-apply-is-not-a-function-inside-graceful
