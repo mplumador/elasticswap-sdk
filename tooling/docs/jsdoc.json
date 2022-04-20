@@ -4,10 +4,11 @@
 	},
 	"plugins": ["node_modules/jsdoc-babel"],
 	"babel": {
-	  "presets": [ "es2015"],
+	  "presets": [ "@babel/preset-env"],
 	  "extensions": ["js", "es6", "jsx", "mjs"],
+	  "plugins": [ "@babel/plugin-syntax-import-assertions"],
 	  "parserOpts": {
-		  "plugins": ["importAssertions"]
+		  "plugins": ["@babel/plugin-syntax-import-assertions"]
 	  }
 	}
 }
